@@ -3,6 +3,8 @@ from tkinter import *
 from tkinter import messagebox
 from tkinter import ttk 
 import os
+import json
+import statistics
 
 # creates a tkinter window to be referenced as "sgt" throughout the program
 sgt = Tk()
@@ -14,6 +16,32 @@ sgt.configure(bg="#FAF9F6")
 sgt.maxsize(630, 420)
 sgt.minsize(630, 420)
 
+def extremities(classID):
+    currentHighest = 0
+    assignmentNo = 0
+    for i in os.listdir("./data/" + classID + "/grades"):
+        with open("./data/" + classID + "/grades/" + i, "r") as f:
+            gradeDict = json.loads(f.read())
+            if gradeDict[max(gradeDict)] > currentHighest:
+                currentHighest = gradeDict[max(gradeDict)]
+                assignmentNo = i
+    with open("./data/" + classID + "/grades/" + os.listdir("./data/" + classID + "/grades")[(int(assignmentNo[:-5]) - 1)], "r") as f:
+        gradeDict = json.loads(f.read())
+        return max(gradeDict), currentHighest, assignmentNo
+
+def averageCalc(classID):
+    overallTotal = []
+    individualAverages = []
+    for i in os.listdir("./data/" + classID + "/grades"):
+        runningTotal = []
+        with open("./data/" + classID + "/grades/" + i, "r") as f:
+            gradeDict = json.loads(f.read())
+            for i in gradeDict.values():
+                overallTotal.append(i)
+                runningTotal.append(i)
+            individualAverages.append(round(statistics.mean(runningTotal), 1) )
+    return round(statistics.mean(overallTotal), 1), round(statistics.median(overallTotal), 1), individualAverages, len(os.listdir("./data/" + classID + "/grades"))
+
 def addClass():
     messagebox.showinfo("Message", "Click Okay to Proceed")
 
@@ -22,18 +50,36 @@ def selected_item():
         return listbox.get(i)
 
 def loadClass():
+
+    if selected_item() == None:
+        messagebox.showinfo("Error", "Please select a class to continue", icon="error")
+        return
+
     className = selected_item()
     frameTitle.set(className)
     tabControl = ttk.Notebook(gradeViewer, width=380)
 
+    overview = ttk.Frame(tabControl)
     average = ttk.Frame(tabControl) 
     hsl = ttk.Frame(tabControl)
-    overview = ttk.Frame(tabControl) 
+    addGrades = ttk.Frame(tabControl)
 
-    tabControl.add(average, text ='Averages') 
+    tabControl.add(overview, text ='Overview')
+    tabControl.add(average, text ='Averages')
+
+    overallMeanAverageValue, overallMedianAverageValue, invdividualAverageValues, assignmentQuant = averageCalc(className)
+    avgHeadline = "Average accross all " + str(assignmentQuant) + " assignments:\n" + str(overallMeanAverageValue) + " (mean) " + str(overallMedianAverageValue) + " (median) "
+    overallAverage = Label(average, text=avgHeadline, font=("Helvetica", 12))
+    overallAverage.grid(row=0, column=0, columnspan=3)
+
     tabControl.add(hsl, text ='Highest / Lowest')
-    tabControl.add(overview, text ='Overview') 
+    tabControl.add(addGrades, text ='Add Grades') 
     tabControl.grid(row=1, column=0, padx=5)
+
+    highestKey, highestValue, highestassignmentno = extremities(className)
+    highestLowestHeadline = "The individual with the highest grade is\n" + str(highestKey) + "\nwhom in the assigment with ID " + str(highestassignmentno[:-5]) + " scored\n" + str(highestValue) + "/100"
+    overallHighestLowest = Label(hsl, text=highestLowestHeadline, font=("Helvetica", 12))
+    overallHighestLowest.grid(row=0, column=0, columnspan=3)
 
 sidebar = Frame(sgt, width=200, height=400)
 sidebar.grid(row=0, column=0, padx=(10, 5), pady=10)
