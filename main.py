@@ -1,3 +1,6 @@
+# A quick note, i went a little too ambitious with this project and wasn't able to achive full functionality as specificed in the homwork with my additional multi-assignment feature
+
+
 # imports the python module tkinter to be reference as "tk" throughout the program
 from tkinter import *
 from tkinter import messagebox
@@ -43,11 +46,35 @@ def averageCalc(classID):
     return round(statistics.mean(overallTotal), 1), round(statistics.median(overallTotal), 1), individualAverages, len(os.listdir("./data/" + classID + "/grades"))
 
 def addClass():
-    messagebox.showinfo("Message", "Click Okay to Proceed")
+    messagebox.showinfo("Please use the terminal", "Please continue in the python terminal.")
+    yearGroup = input("Please enter the new classes year group\n")
+    optionBlock = input("Please enter the new classes option block\n")
+    Subject = input("Please enter the new classes subject\n")
+    classCode = yearGroup + optionBlock.upper() + "-" + Subject[:2]
+    os.mkdir("./data/" + classCode)
+    students  = { "students" : [] }
+    name = ""
+    while name.lower() != "done":
+        name = input("Please enter the name of a student in the class alternitively enter 'done' when finished\n")
+        if name != "done":
+            students["students"].append(name)
+    with open("./data/" + classCode + "/students.json", "w") as f:
+        f.write(json.dumps(students))
 
 def selected_item():
     for i in listbox.curselection():
         return listbox.get(i)
+
+def addGradesFunc(classID):
+    with open("./data/" + classID + "/students.json", "r") as f:
+            grades = {}
+            studentsDict = json.loads(f.read())
+            assignmentNo = len(os.listdir("./data/" + classID + "/grades")) + 1
+            for i in studentsDict["students"]:
+                grade = input("Enter " + i + "'s grade for assignment " + str(assignmentNo) + " :\n")
+                grades[i] = grade
+    with open("./data/" + classID + "/grades/" + assignmentNo + ".json", "w") as f:
+        f.write(json.dumps(grades))
 
 def loadClass():
 
@@ -65,6 +92,37 @@ def loadClass():
     addGrades = ttk.Frame(tabControl)
 
     tabControl.add(overview, text ='Overview')
+
+    overviewHead = Label(overview, text="Select Assignment:", font=("Helvetica", 12))
+    overviewHead.grid(row=0, column=0)
+
+    options = os.listdir("./data/" + className + "/grades")
+
+    varList = StringVar(sgt)
+    varList.set("0.json")
+
+    overviewSelector = OptionMenu( overview , varList , *options ) 
+    overviewSelector.grid(row=0, column=1)
+
+    overviewTree = ttk.Treeview(overview, columns=('name', 'grade'), show='headings')
+    overviewTree.heading('name', text='Name')
+    overviewTree.heading('grade', text='Grade')
+    overviewTree.grid(row=1, column=0, columnspan=3)
+
+    def loadGrades(classID, assignment):
+        for row in overviewTree.get_children():
+            overviewTree.delete(row)
+        with open("./data/" + classID + "/grades/" + assignment, "r") as f:
+            gradeDict = json.loads(f.read())
+            for key in gradeDict:
+                overviewTree.insert('', END, values=(key, gradeDict[key]))
+        print("Done!")
+
+    loadAssignment = Button(overview, text="Load Assignment", font=("Helvetica", 9), command=loadGrades(className, varList.get()))
+    loadAssignment.grid(row=0, column=2)
+
+    loadGrades(className, "0.json")
+
     tabControl.add(average, text ='Averages')
 
     overallMeanAverageValue, overallMedianAverageValue, invdividualAverageValues, assignmentQuant = averageCalc(className)
@@ -73,13 +131,17 @@ def loadClass():
     overallAverage.grid(row=0, column=0, columnspan=3)
 
     tabControl.add(hsl, text ='Highest / Lowest')
-    tabControl.add(addGrades, text ='Add Grades') 
-    tabControl.grid(row=1, column=0, padx=5)
 
     highestKey, highestValue, highestassignmentno = extremities(className)
     highestLowestHeadline = "The individual with the highest grade is\n" + str(highestKey) + "\nwhom in the assigment with ID " + str(highestassignmentno[:-5]) + " scored\n" + str(highestValue) + "/100"
     overallHighestLowest = Label(hsl, text=highestLowestHeadline, font=("Helvetica", 12))
     overallHighestLowest.grid(row=0, column=0, columnspan=3)
+
+    tabControl.add(addGrades, text ='Add Grades') 
+    tabControl.grid(row=1, column=0, padx=5)
+
+    a = Button(addGrades, text="Add Grades", font=("Helvetica", 9), command=addGradesFunc(className))
+    a.grid(row=0, column=0)
 
 sidebar = Frame(sgt, width=200, height=400)
 sidebar.grid(row=0, column=0, padx=(10, 5), pady=10)
