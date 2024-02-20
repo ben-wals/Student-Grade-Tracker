@@ -77,6 +77,7 @@ def addGradesFunc(classID):
         f.write(json.dumps(grades))
 
 def loadClass():
+    global className
 
     if selected_item() == None:
         messagebox.showinfo("Error", "Please select a class to continue", icon="error")
@@ -109,7 +110,10 @@ def loadClass():
     overviewTree.heading('grade', text='Grade')
     overviewTree.grid(row=1, column=0, columnspan=3)
 
-    def loadGrades(classID, assignment):
+    def loadGrades():
+        classID = className
+        assignment = varList.get()
+
         for row in overviewTree.get_children():
             overviewTree.delete(row)
         with open("./data/" + classID + "/grades/" + assignment, "r") as f:
@@ -118,10 +122,10 @@ def loadClass():
                 overviewTree.insert('', END, values=(key, gradeDict[key]))
         print("Done!")
 
-    loadAssignment = Button(overview, text="Load Assignment", font=("Helvetica", 9), command=loadGrades(className, varList.get()))
+    loadAssignment = Button(overview, text="Load Assignment", font=("Helvetica", 9), command=loadGrades)
     loadAssignment.grid(row=0, column=2)
 
-    loadGrades(className, "0.json")
+    loadGrades()
 
     tabControl.add(average, text ='Averages')
 
